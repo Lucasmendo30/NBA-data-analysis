@@ -1,0 +1,396 @@
+---
+title: "NBA STATS. Función 1"
+author: "Lucas"
+date: "2025-04-09"
+output: html_document
+---
+
+Función principal scraper
+```{r}
+library(reticulate)
+
+# Importar módulos de la API
+nba_api <- import("nba_api.stats.endpoints")
+common <- import("nba_api.stats.static.players")
+Sys.sleep(2)
+
+get_all_player_stats <- function(player_name) {
+  cat("🔍 Buscando jugador:", player_name, "\n")
+  
+  # Buscar jugador por nombre exacto
+  player_list <- common$get_players()
+  player <- Filter(function(p) tolower(p$full_name) == tolower(player_name), player_list)
+  
+  if (length(player) == 0) {
+    cat("❌ Jugador no encontrado.\n")
+    return(NULL)
+  }
+  
+  player_id <- player[[1]]$id
+  cat("✅ Encontrado:", player[[1]]$full_name, "- ID:", player_id, "\n")
+  Sys.sleep(1)
+  
+  # Obtener estadísticas
+  cat("📊 Descargando estadísticas...\n")
+  stats <- nba_api$playercareerstats$PlayerCareerStats(player_id = player_id)
+  py_stats <- stats$get_data_frames()
+  
+  # Convertir a R data.frames
+  stats_list <- lapply(py_stats, py_to_r)
+  
+  # Asignar nombres según lo que devuelve (puede variar por jugador)
+  names(stats_list) <- c("regular_season", "playoffs", "career_totals")[1:length(stats_list)]
+  
+  cat("✅ Estadísticas descargadas:\n")
+  print(names(stats_list))
+  
+  return(stats_list)
+}
+```
+
+
+Imprimir tablas estadísticas de un jugador concreto divididas por temporada regular, playoffs y globales.
+```{r}
+stats <- get_all_player_stats("LeBron James")
+
+# Acceder a cada sección
+regular <- stats$regular_season
+playoffs <- stats$playoffs
+career_totals <- stats$career_totals  # Puede no existir para todos
+
+# Mostrarlas completas
+print("📊 Temporada regular:")
+print(regular)
+
+print("🏆 Playoffs:")
+print(playoffs)
+
+if (!is.null(career_totals)) {
+  print("📈 Totales de carrera:")
+  print(career_totals)
+}
+```
+
+
+
+Seleccionar columnas determinadas del dataframe de estadísticas del jugador
+```{r}
+# Supongamos que ya tienes el dataframe regular
+stats <- get_all_player_stats("LeBron James")
+regular <- stats$regular_season
+
+# Seleccionamos columnas específicas
+selected_columns <- regular[c("SEASON_ID","TEAM_ABBREVIATION","PLAYER_AGE","GP","GS","MIN","FGM","FGA","FG_PCT","FG3M","FG3A","FG3_PCT","FTM","FTA","FT_PCT","OREB","DREB","REB", "AST", "STL","TOV","PF","PTS")]
+
+# Convertimos a vectores
+temporada <- selected_columns$SEASON_ID
+equipo <- selected_columns$TEAM_ABBREVIATION
+edad <- selected_columns$PLAYER_AGE
+partidos_jugados <- selected_columns$GP
+titularidades <- selected_columns$GS
+minutos <- selected_columns$MIN
+tiros_campo_anotados <- selected_columns$FGM
+tiros_campo_intentados <- selected_columns$FGA
+tiros_campo_porcentaje <- selected_columns$FG_PCT
+triples_anotados <- selected_columns$FG3M
+triples_intentados <- selected_columns$FG3A
+triples_porcentaje <- selected_columns$FG3_PCT
+tl_anotados <- selected_columns$FTM
+tl_intentados <- selected_columns$FTA
+tl_porcentaje <- selected_columns$FT_PCT
+rebotes_ofensivos <- selected_columns$OREB
+rebotes_defensivos <- selected_columns$DREB
+rebotes <- selected_columns$REB
+asistencias <- selected_columns$AST
+robos <- selected_columns$STL
+perdidas <- selected_columns$TOV
+faltas_personales <- selected_columns$PF
+puntos <- selected_columns$PTS
+
+# Imprimir los resultados por separado
+
+# print(rebotes)
+# print(asistencias)
+# print(robos)
+# print(temporada)
+# print(puntos)
+# ...
+```
+# JUGADORES INDIVIDUALES
+
+## LeBron James
+
+### Puntos por temporada de LeBron James
+```{r}
+temporadas = c(2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024) # las temporadas están introducidas a mano porque en el data frame están es str y en formato yyyy-yy.
+plot(temporadas, puntos, type = "b", main = "Puntos por temporada de LeBron James", xlab = "Temporadas", ylab = "Puntos", col = "darkred", lwd = 2, ylim = c(0,3000), xlim = c(2000,2025), pch=21, bg="red", bty="n")
+grid()
+```
+### Porcentaje de tiro en cada temporada
+```{r}
+plot(temporadas, tiros_campo_porcentaje, type = "b", main = "Porcentaje tiros de campo por temporada de LeBron James", xlab = "Temporadas", ylab = "Porcentaje", col = "blue", lwd = 2,ylim=c(0.3,0.65), xlim = c(2000,2025), pch=21, bg="lightblue", bty="n")
+grid()
+```
+
+
+
+### Relación triples intentados contra triples anotados
+```{r}
+plot(temporadas, triples_intentados,type = "b", main = "Relación triples intentados vs triples anotados de LeBron James", xlab = "Temporadas", ylab = "Triples", col = "darkred", lwd = 2,ylim = c(0,500), xlim = c(2000,2025), pch=21, bg="red", bty="n")
+points(temporadas, triples_anotados, type = "b", col = "blue", lwd = 2, pch=21, bg="lightblue", bty="n")
+legend("topleft", c("Triples intentados","Triples anotados"), pch=c(21,21), col=c("red","blue"))
+
+```
+
+
+
+### Relación tiros de campo intentados contra tiros anotados 
+```{r}
+plot(temporadas, tiros_campo_intentados,type = "b", main = "Relación tiros de campo intentados vs tiros anotados de LeBron James", xlab = "Temporadas", ylab = "Tiros de campo", col = "darkred", lwd = 2,ylim = c(0,2000), xlim = c(2000,2025), pch=21, bg="red", bty="n")
+points(temporadas, tiros_campo_anotados, type = "b", col = "blue", lwd = 2, pch=21, bg="lightblue", bty="n")
+legend("bottomleft", c("Tiros intentados","Tiros anotados"), pch=c(21,21), col=c("red","blue"))
+
+```
+
+
+
+### Porcentajes de tiro
+```{r}
+plot(temporadas, tiros_campo_porcentaje,type = "b", main = "Porcentajes de tiro de LeBron James", xlab = "Temporadas", ylab = "Porcentajes", col = "darkred", lwd = 2,ylim = c(0.2,0.8), xlim = c(2000,2025), pch=21, bg="red", bty="n")
+points(temporadas, triples_porcentaje, type = "b", col = "blue", lwd = 2, pch=21, bg="lightblue", bty="n")
+points(temporadas, tl_porcentaje, type = "b", col = "orange", lwd = 2, pch=21, bg="yellow", bty="n")
+legend("topleft", c("% Tiros libres","% Tiros de campo","% Triples"), pch=c(21,21,21), col=c("orange","red","blue"))
+
+```
+
+
+
+
+## Nikola Jokic
+
+```{r}
+stats <- get_all_player_stats("Nikola Jokić")
+
+# Acceder a cada sección
+regular <- stats$regular_season
+playoffs <- stats$playoffs
+career_totals <- stats$career_totals  # Puede no existir para todos
+
+# Mostrarlas completas
+print("📊 Temporada regular:")
+print(regular)
+
+print("🏆 Playoffs:")
+print(playoffs)
+
+if (!is.null(career_totals)) {
+  print("📈 Totales de carrera:")
+  print(career_totals)
+}
+```
+
+Seleccionar columnas determinadas del dataframe de estadísticas del jugador
+```{r}
+# Supongamos que ya tienes el dataframe regular
+stats <- get_all_player_stats("Nikola Jokić")
+regular <- stats$regular_season
+
+# Seleccionamos columnas específicas
+selected_columns <- regular[c("SEASON_ID","TEAM_ABBREVIATION","PLAYER_AGE","GP","GS","MIN","FGM","FGA","FG_PCT","FG3M","FG3A","FG3_PCT","FTM","FTA","FT_PCT","OREB","DREB","REB", "AST", "STL","TOV","PF","PTS")]
+
+# Convertimos a vectores
+temporada <- selected_columns$SEASON_ID
+equipo <- selected_columns$TEAM_ABBREVIATION
+edad <- selected_columns$PLAYER_AGE
+partidos_jugados <- selected_columns$GP
+titularidades <- selected_columns$GS
+minutos <- selected_columns$MIN
+tiros_campo_anotados <- selected_columns$FGM
+tiros_campo_intentados <- selected_columns$FGA
+tiros_campo_porcentaje <- selected_columns$FG_PCT
+triples_anotados <- selected_columns$FG3M
+triples_intentados <- selected_columns$FG3A
+triples_porcentaje <- selected_columns$FG3_PCT
+tl_anotados <- selected_columns$FTM
+tl_intentados <- selected_columns$FTA
+tl_porcentaje <- selected_columns$FT_PCT
+rebotes_ofensivos <- selected_columns$OREB
+rebotes_defensivos <- selected_columns$DREB
+rebotes <- selected_columns$REB
+asistencias <- selected_columns$AST
+robos <- selected_columns$STL
+perdidas <- selected_columns$TOV
+faltas_personales <- selected_columns$PF
+puntos <- selected_columns$PTS
+```
+
+
+
+### Puntos, rebotes y asistencias
+```{r}
+temporadas_jokic=c(2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024)
+plot(temporadas_jokic, puntos, type = "b", main = "Puntos, rebotes y asistencias de Nikola Jokić", xlab = "Temporadas", ylab = "Puntos, rebotes y asistencias", col = "darkred", lwd = 2,ylim = c(0,2200), xlim = c(2014,2025), pch=21, bg="red", bty="n")
+points(temporadas_jokic, asistencias, type = "b", col = "blue", lwd = 2, pch=21, bg="lightblue", bty="n")
+points(temporadas_jokic, rebotes, type = "b", col = "orange", lwd = 2, pch=21, bg="yellow", bty="n")
+legend("topleft", c("Puntos","Rebotes","Asistencias"), pch=c(21,21,21), col=c("red","orange","blue"))
+text(temporadas_jokic, puntos, c("","","","","","MVP","MVP","","MVP",""), cex=0.7, pos=3, col="blue")
+grid()
+```
+
+
+
+### Regresión lineal minutos/puntos
+```{r}
+plot(minutos, puntos, type = "p", main = "Regresión lineal minutos/puntos por temporada de Nikola Jokić", xlab = "Minutos", ylab = "Puntos", col = "darkred", lwd = 2,ylim = c(800,2150), xlim = c(1750,2800), pch=21, bg="red", bty="n")
+text(minutos, puntos, temporadas_jokic, cex=0.6, pos=3, col="blue")
+grid()
+
+# Regresión lineal
+n=length(minutos)
+minutosbar=mean(minutos)
+puntosbar=mean(puntos)
+medias=c(minutosbar,puntosbar)
+round(medias,3)
+
+reg.lin=lm(puntos~minutos) # lm función de R para hacer regresión lineal
+summary(reg.lin)
+abline(reg.lin, col="Red")
+```
+
+Coeficientes de la recta de regresión: alfa = -1439.7874 y beta = 1.2976
+El alfa me da raro.
+El beta representa que por cada minuto jugado el jugador anota 1.29 puntos
+¿Qué representa el alfa?
+¿El r cuadrado = 0.7867 representa un buen ajuste?
+
+El modelo en su forma reparametrizada es: y = puntosbar(1614.6) + 1.2976 * (x - minutosbar(2353.8))
+
+Posteriori de alfa y beta(código copiado de la práctica)
+```{r}
+SSx=sum((minutos-minutosbar)^2)
+SSxy=sum((minutos-minutosbar)*(puntos-puntosbar))
+betahat=SSxy/SSx
+sigma2=sum((puntos-(puntosbar+betahat*(minutos-minutosbar)))^2)/(n-2)
+#parámetros a posteriori para beta
+beta_1=betahat
+sigma12_beta=sigma2/SSx
+cat("Parámetros a posteriori:\npara beta: media",round(beta_1,3),"varianza",round(sigma12_beta,3))
+#parámetros a posteriori para alfa_xbar
+alfa_1=mean(puntos)
+sigma12_alfa=sigma2/n
+cat("\npara alfa_xbar: media",round(alfa_1,3),"varianza",round(sigma12_alfa,3))
+```
+
+Intervalos de credibilidad para alfa y beta
+```{r}
+ext_inf_alfa=alfa_1+qt(0.025,n-2)*sqrt(sigma12_alfa)
+ext_sup_alfa=alfa_1-qt(0.025,n-2)*sqrt(sigma12_alfa)
+int_alfa=c(ext_inf_alfa, ext_sup_alfa)
+cat("IC(alfa_xbar):",round(int_alfa,4))
+
+ext_inf_beta=beta_1+qt(0.025,n-2)*sqrt(sigma12_beta)
+ext_sup_beta=beta_1-qt(0.025,n-2)*sqrt(sigma12_beta)
+int_beta=c(ext_inf_beta,ext_sup_beta)
+cat("\nIC(beta):",round(int_beta,4))
+
+confint(reg.lin,level=0.95)
+```
+
+Intervalos recta normalizada:
+```{r}
+x1=minutos-minutosbar
+recta=lm(puntos~x1)
+confint(recta,level=0.95)
+```
+
+
+
+Predictiva:
+```{r}
+minutos_prox_temporada=2520
+mu_pred=alfa_1+beta_1*(minutos_prox_temporada-minutosbar)
+sigma2_pred=sigma12_alfa+sigma12_beta*(minutos_prox_temporada-minutosbar)^2 + sigma2
+cat("Puntos predichos para la próxima temporada:",round(mu_pred,3))
+
+alpha=0.85
+lb_pred=mu_pred+qt(alpha/2,n-2)*sqrt(sigma2_pred)
+ub_pred=mu_pred-qt(alpha/2,n-2)*sqrt(sigma2_pred)
+int_pred=c(lb_pred,ub_pred)
+cat("\nInt. predictivo(95%):",round(int_pred,3))
+```
+
+
+# Curry vs Ray Allen
+
+```{r}
+stats <- get_all_player_stats("Stephen Curry")
+regular_curry <- stats$regular_season
+print(regular_curry)
+stats <- get_all_player_stats("Ray Allen")
+regular_ray <- stats$regular_season
+print(regular_ray)
+```
+```{r}
+selected_columns <- regular_curry[c("FG3M","FG3A","FG3_PCT")]
+c.triples_anotados <- selected_columns$FG3M
+c.triples_intentados <- selected_columns$FG3A
+c.triples_porcentaje <- selected_columns$FG3_PCT
+selected_columns <- regular_ray[c("FG3M","FG3A","FG3_PCT")]
+r.triples_anotados <- selected_columns$FG3M
+r.triples_intentados <- selected_columns$FG3A
+r.triples_porcentaje <- selected_columns$FG3_PCT
+
+plot(c.triples_intentados, c.triples_anotados, type = "p", main = "Regresión lineal triples intentados/anotados Stephen Curry vs Ray Allen", xlab = "Intentos cada temporada", ylab = "Aciertos", xlim = c(0,1000), col = "darkred", lwd = 2,ylim = c(0,500), pch=21, bg="red", bty="n")
+points(r.triples_intentados, r.triples_anotados, type = "p", col = "blue", lwd = 2, pch=21, bg="lightblue", bty="n")
+grid()
+reg.curry=lm(c.triples_anotados~c.triples_intentados)
+reg.ray=lm(r.triples_anotados~r.triples_intentados)
+abline(reg.curry, col="Red")
+abline(reg.ray, col="Blue")
+legend("topleft", c("Stephen Curry","Ray Allen"), pch=c(21,21), col=c("red","blue"))
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
