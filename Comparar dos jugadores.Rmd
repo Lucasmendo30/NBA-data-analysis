@@ -1,0 +1,62 @@
+---
+title: "Función 4"
+author: "Lucas"
+date: "2025-04-10"
+output: html_document
+---
+# COMPARAR JUGADORES
+
+```{r}
+compare_players <- function(player1_name, player2_name, season = "2023-24", season_type = "Regular Season") {
+  cat("⚖️ Comparando jugadores:", player1_name, "vs", player2_name, "\n")
+  
+  player_list <- common$get_players()
+  get_id <- function(name) {
+    p <- Filter(function(p) tolower(p$full_name) == tolower(name), player_list)
+    if (length(p) == 0) return(NULL)
+    return(p[[1]]$id)
+  }
+  
+  id1 <- get_id(player1_name)
+  id2 <- get_id(player2_name)
+  
+  if (is.null(id1) || is.null(id2)) {
+    cat("❌ Uno o ambos jugadores no encontrados.\n")
+    return(NULL)
+  }
+  
+  Sys.sleep(1)
+  
+  comparison <- nba_api$playercompare$PlayerCompare(
+    player_id_list = paste(id1, id2, sep = ","),
+    season = season,
+    season_type_playoffs = season_type
+  )
+  
+  comparison_df <- lapply(comparison$get_data_frames(), py_to_r)
+  names(comparison_df) <- c("head_to_head", "stats_summary", "misc", "advanced")
+  
+  cat("✅ Comparación completada.\n")
+  return(comparison_df)
+}
+
+```
+
+
+
+
+
+```{r}
+comparacion <- compare_players("Stephen Curry", "LeBron James", season = "2023-24")
+
+
+```
+
+
+
+
+
+
+
+
+

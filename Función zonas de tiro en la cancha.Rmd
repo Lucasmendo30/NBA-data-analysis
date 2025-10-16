@@ -1,0 +1,167 @@
+---
+title: "Función 2"
+author: "Lucas"
+date: "2025-04-10"
+output: html_document
+---
+
+```{r}
+get_player_shot_chart <- function(player_name, season = "2023-24", season_type = "Regular Season") {
+  cat("📍 Obteniendo tiros de cancha para:", player_name, "\n")
+  
+  player_list <- common$get_players()
+  player <- Filter(function(p) tolower(p$full_name) == tolower(player_name), player_list)
+  
+  if (length(player) == 0) {
+    cat("❌ Jugador no encontrado.\n")
+    return(NULL)
+  }
+  
+  player_id <- player[[1]]$id
+  Sys.sleep(2)
+  
+  # Obtener team_id con el endpoint PlayerProfileV2
+  profile <- nba_api$playerprofilev2$PlayerProfileV2(player_id = player_id)
+  team_id <- py_to_r(profile$get_data_frames()[[1]])$TEAM_ID[1]
+  
+  cat("📋 ID del equipo:", team_id, "\n")
+  Sys.sleep(2)
+  
+  # Intentar obtener la shot chart
+  tryCatch({
+    shot_chart <- nba_api$shotchartdetail$ShotChartDetail(
+      team_id = team_id,
+      player_id = player_id,
+      season_type_all_star = season_type,
+      season_nullable = season,
+      context_measure_simple = "FGA"
+    )
+    
+    shot_df <- py_to_r(shot_chart$get_data_frames()[[1]])
+    cat("✅ Tiros obtenidos:", nrow(shot_df), "\n")
+    return(shot_df)
+    
+  }, error = function(e) {
+    cat("⚠️ Error al obtener tiros. Puede ser falta de datos o bloqueo temporal.\n")
+    print(e)
+    return(NULL)
+  })
+}
+
+
+```
+
+
+Dibuja la cancha
+```{r}
+draw_nba_court <- function(color = "gray80") {
+  court_elements <- list(
+    # Línea de fondo
+    geom_rect(aes(xmin = -250, xmax = 250, ymin = -47.5, ymax = 422.5), fill = NA, color = color),
+    # Línea de 3 pts
+    geom_path(data = data.frame(
+      x = 239 * cos(seq(-pi / 2, pi / 2, length.out = 100)),
+      y = 239 * sin(seq(-pi / 2, pi / 2, length.out = 100)) + 140
+    ), aes(x, y), color = color),
+    geom_segment(aes(x = -220, y = -47.5, xend = -220, yend = 140), color = color),
+    geom_segment(aes(x = 220, y = -47.5, xend = 220, yend = 140), color = color),
+    # Pintura
+    geom_rect(aes(xmin = -80, xmax = 80, ymin = -47.5, ymax = 190), fill = NA, color = color),
+    # Círculo del tiro libre
+    geom_path(data = data.frame(
+      x = 60 * cos(seq(0, pi, length.out = 100)),
+      y = 60 * sin(seq(0, pi, length.out = 100)) + 190
+    ), aes(x, y), color = color),
+    # Círculo central
+    geom_path(data = data.frame(
+      x = 60 * cos(seq(0, 2 * pi, length.out = 100)),
+      y = 60 * sin(seq(0, 2 * pi, length.out = 100)) + 422.5
+    ), aes(x, y), color = color)
+  )
+  return(court_elements)
+}
+
+```
+
+
+Grafica los tiros
+```{r}
+plot_shot_chart <- function(shot_data, player_name = "") {
+  library(ggplot2)
+  library(dplyr)
+
+  if (is.null(shot_data) || nrow(shot_data) == 0) {
+    cat("⚠️ No hay datos de tiros para graficar.\n")
+    return(NULL)
+  }
+
+  if (!("shot_made_flag" %in% colnames(shot_data))) {
+    cat("⚠️ El DataFrame no contiene la columna 'shot_made_flag'.\n")
+    print(colnames(shot_data))
+    return(NULL)
+  }
+
+  ggplot(shot_data, aes(x = loc_x, y = loc_y)) +
+    geom_point(aes(color = shot_made_flag), alpha = 0.6) +
+    scale_color_manual(values = c("red", "green"), labels = c("Fallado", "Encestado")) +
+    draw_nba_court() +
+    coord_fixed(ratio = 1, xlim = c(-250, 250), ylim = c(-47.5, 422.5)) +
+    labs(
+      title = paste("Mapa de tiros de", player_name),
+      color = "Resultado"
+    ) +
+    theme_minimal()
+}
+
+
+```
+
+
+
+Uso
+```{r}
+shots <- get_player_shot_chart("Stephen Curry", season = "2023-24")
+plot_shot_chart(shots, "Stephen Curry")
+
+
+```
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+

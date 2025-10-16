@@ -1,0 +1,69 @@
+---
+title: "Función 3"
+author: "Lucas"
+date: "2025-04-10"
+output: html_document
+---
+
+# SITUACIONES EN LAS QUE ANOTA UN JUGADOR
+
+```{r}
+get_player_synergy <- function(player_id, season = "2023-24", season_type = "Regular Season") {
+  cat("🧩 Obteniendo tipos de jugadas del jugador (Synergy)...\n")
+  
+  Sys.sleep(1)
+  
+  synergy <- nba_api$synergyplaytypes$SynergyPlayTypes(
+    player_id = player_id,
+    season = season,
+    season_type_all_star = season_type,
+    player_or_team = "Player"
+  )
+  
+  synergy_df <- py_to_r(synergy$get_data_frames()[[1]])
+  cat("✅ Datos de Synergy obtenidos.\n")
+  return(synergy_df)
+}
+
+```
+
+
+```{r}
+canastas <- get_player_synergy(player_id = 15377, season = "2023-24")
+
+
+```
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
